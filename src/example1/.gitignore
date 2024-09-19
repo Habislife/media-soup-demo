@@ -1,0 +1,47 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnpm-debug.log*
+.pnp/
+
+# Dependency directories
+/.pnp
+.pnp.js
+
+# Build output directories
+/dist/
+/build/
+/out/
+
+# MediaSoup-related files
+.mediasoup/
+
+# ESLint
+.eslintcache
+
+# Babel
+.babelrc
+.cache/
+
+# Gulp
+gulpfile.js
+gulpfile.babel.js
+
+# Coverage directory for tests
+/coverage/
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IntelliJ IDEA / JetBrains
+.idea/
+*.iml
