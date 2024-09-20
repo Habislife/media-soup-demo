@@ -34,7 +34,7 @@ const peers = io.of('/mediasoup')
 let worker
 let router
 
-let createWorker = async() => {
+const createWorker = async() => {
     worker = await mediasoup.createWorker({
         rtcMinPort: 2000,
         rtcMaxPort: 2020,
@@ -79,5 +79,12 @@ peers.on('connection', async socket => {
             console.log('peer disconnected')
          })
 
-    router = await worker.createWorker({ mediaCodecs})
+    router = await worker.createRouter({ mediaCodecs})
+
+    socket.on ('getRtpCapabilities', (callback) =>{
+        const rtpCapabilities = router.rtpCapabilities
+        console.log('rtp Capabilities', rtpCapabilities)
+
+        callback({ rtpCapabilities })
+    })
 })
