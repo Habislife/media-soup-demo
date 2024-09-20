@@ -33,6 +33,10 @@ const peers = io.of('/mediasoup')
 
 let worker
 let router
+let producerTransport
+let producer
+let consumerTransport
+let consumer
 
 const createWorker = async() => {
     worker = await mediasoup.createWorker({
@@ -79,12 +83,89 @@ peers.on('connection', async socket => {
             console.log('peer disconnected')
          })
 
-    router = await worker.createRouter({ mediaCodecs})
+    router = await worker.createRouter({ mediaCodecs, })
 
-    socket.on ('getRtpCapabilities', (callback) =>{
+    socket.on('getRtpCapabilities', (callback) => {
         const rtpCapabilities = router.rtpCapabilities
         console.log('rtp Capabilities', rtpCapabilities)
 
         callback({ rtpCapabilities })
     })
+
+    socket.on('createWebRtcTransport', async({ sender }, callback) =>{
+        console.log(`Is this a sender request? ${sender}`)
+        if(sender)
+            producerTransport = await createWebRtcTransport(callback)
+        else
+        consumerTransport = await createWebRtcTransport(callback)
+    })
+    socket.on('transport-connect', async({ dtlsParameters },callback) =>{
+        console.log('DTLS PARAMS... ', {dtlsParameters })
+        await producerTransport.connect({ dtlsParameters })
+    })
+    socket.on('transport-produce',async({ kind, rtpParameters, appData }, callback) =>{
+        producer = await producerTransport.produce({
+            kind,
+            rtpParameters,
+        })
+
+        console.log('Producer Id: ', producer.id, producer.kind)
+
+
+        producer.on('transportclose', ()=>{
+            console.log('transport for this producer closed')
+            ProduceRequest.close()
+        })
+
+        callback({
+            id: producer.id
+        })
+    })
 })
+
+socket.on('transport-recv-connect', async({ dtlsParameters })=> {
+    
+})
+
+const createWebRtcTransport = async (callback) => {
+    try {
+        const webRtcTrnsport_options = {
+            listenIps:[
+                {
+                    ip: '127.0.0.1'
+                }
+            ],
+            enableUdp: true,
+            enableTcp: true,
+            preferUdp: true,
+        }
+        let transport = await router.createWebRtcTransport(webRtcTrnsport_options)
+        transport.on('dtlsstatechange', dtlsState => {
+            if (dtlsState === 'closed') {
+                transport.close()
+            }
+        })
+
+    transport.on('close', ()=> {
+        console.log('transport closed')
+    })
+    callback({
+        params: {
+            id: transport.id,
+            iceParameters: transport.iceParameters,
+            iceCandidates: transport.iceCandidates,
+            dtlsParameters: transport.dtlsParameters,
+        }
+    })
+
+    return transport
+
+    }catch (error) {
+        console.log(error)
+        callback({
+            params: {
+                error: error 
+            }
+        })
+    }
+}
